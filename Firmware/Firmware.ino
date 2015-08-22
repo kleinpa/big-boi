@@ -14,6 +14,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
+float temperature;
 float setpoint = 15.55;
 float epsilon = 0.5;
 
@@ -48,7 +49,7 @@ void loop(void)
 {
   delay(15000);
   connect_wifi();
-  float temperature = get_temperature();
+  temperature = get_temperature();
   if(temperature < -25){
     compressor = 0;
     set_compressor();
@@ -57,7 +58,7 @@ void loop(void)
   if (!compressor && temperature > setpoint + epsilon) compressor = 1;
   if ( compressor && temperature < setpoint - epsilon) compressor = 0;
   set_compressor();
-  thingspeak_log(temperature);
+  thingspeak_log();
 }
 
 float get_temperature()
@@ -71,7 +72,7 @@ float set_compressor()
   digitalWrite(0, !compressor);
 }
 
-void thingspeak_log(float temperature){
+void thingspeak_log(){
   WiFiClient client;
   const int httpPort = 80;
   if (!client.connect(host, httpPort)) {
@@ -84,6 +85,10 @@ void thingspeak_log(float temperature){
   url += temperature;
   url += "&field2=";
   url += compressor?"1":"0";
+  url += "&field3=";
+  url += setpoint;
+  url += "&field4=";
+  url += epsilon;
   Serial.println(host + url);
 
   delay(10);
