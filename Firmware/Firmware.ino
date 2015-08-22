@@ -4,29 +4,37 @@
 #include "private.h"
 
 const char* host = "api.thingspeak.com";
+/* Values set in "private.h" */
+// const char* ssid = "home";
+// const char* password = "P4aaw0rd55";
+// const char* thingspeak_key = "XFMVXWGM1l24K55I";
 
-// Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 2
+/* GPIO Mapping */
+const int GPIO_ONE_WIRE = 2;
+const int GPIO_CHILLER = 0;
+const int GPIO_CHILLER_ON = LOW;
+const int GPIO_CHILLER_OFF = HIGH;
 
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-OneWire oneWire(ONE_WIRE_BUS);
+const int UPDATE_DELAY = 15000;
+const int TIMEOUT_NETWORK = 5000;
+const int TIMEOUT_THERMOMETER = 5000;
 
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
-
+// State
 float temperature;
 float setpoint = 10;
 float epsilon = 0.3;
+int chiller = 0;
 
-int compressor = 0;
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(GPIO_ONE_WIRE);
+DallasTemperature thermometers(&oneWire);
 
 void setup(void)
 {
-  // start serial port
   Serial.begin(115200);
   Serial.println();
-  // Start up the library
-  sensors.begin();
+
+  thermometers.begin();
   pinMode(0, OUTPUT);
 }
 
@@ -36,7 +44,7 @@ void connect_wifi(){
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
       delay(50);
-      if(millis() - start > 5000){
+      if(millis() - start > TIMEOUT_NETWORK){
         Serial.println("Timeout connecting to network.");
         return;
       }
@@ -47,14 +55,13 @@ void connect_wifi(){
 
 void loop(void)
 {
-  delay(15000);
+  delay(UPDATE_DELAY);
   connect_wifi();
 
   unsigned long start = millis();
   do {
-    if(millis() - start > 15000) {
-      compressor = 0;
-      set_compressor();
+    if(millis() - start > TIMEOUT_THERMOMETER) {
+      set_chiller(false);
       Serial.println("Timeout reading from thermometer.");
       return;  
     }
@@ -62,21 +69,21 @@ void loop(void)
     temperature = get_temperature();
   } while (temperature < 0);
   
-  if (!compressor && temperature > setpoint + epsilon) compressor = 1;
-  if ( compressor && temperature < setpoint - epsilon) compressor = 0;
-  set_compressor();
+  if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
+  if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
   thingspeak_log();
 }
 
 float get_temperature()
 {
-  sensors.requestTemperatures(); // Send the command to get temperatures
-  return sensors.getTempCByIndex(0);
+  thermometers.requestTemperatures(); // Send the command to get temperatures
+  return thermometers.getTempCByIndex(0);
 }
 
-float set_compressor()
+float set_chiller(bool c)
 {
-  digitalWrite(0, !compressor);
+  chiller = c;
+  digitalWrite(GPIO_CHILLER, chiller ? GPIO_CHILLER_ON : GPIO_CHILLER_OFF);
 }
 
 void thingspeak_log(){
@@ -91,7 +98,7 @@ void thingspeak_log(){
   url += "&field1=";
   url += temperature;
   url += "&field2=";
-  url += compressor?"1":"0";
+  url += chiller?"1":"0";
   url += "&field3=";
   url += setpoint;
   url += "&field4=";
