@@ -15,8 +15,8 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 float temperature;
-float setpoint = 15.55;
-float epsilon = 0.5;
+float setpoint = 10;
+float epsilon = 0.3;
 
 int compressor = 0;
 
@@ -49,12 +49,19 @@ void loop(void)
 {
   delay(15000);
   connect_wifi();
-  temperature = get_temperature();
-  if(temperature < -25){
-    compressor = 0;
-    set_compressor();
-    return;
-  }
+
+  unsigned long start = millis();
+  do {
+    if(millis() - start > 15000) {
+      compressor = 0;
+      set_compressor();
+      Serial.println("Timeout reading from thermometer.");
+      return;  
+    }
+    delay(15);
+    temperature = get_temperature();
+  } while (temperature < 0);
+  
   if (!compressor && temperature > setpoint + epsilon) compressor = 1;
   if ( compressor && temperature < setpoint - epsilon) compressor = 0;
   set_compressor();
