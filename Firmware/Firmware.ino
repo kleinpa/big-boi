@@ -19,10 +19,13 @@ const int UPDATE_DELAY = 15000;
 const int TIMEOUT_NETWORK = 5000;
 const int TIMEOUT_THERMOMETER = 5000;
 
+const int THERMOMETER_MIN = -2;
+const int THERMOMETER_MAX = 37;
+
 // State
 float temperature;
-float setpoint = 10;
-float epsilon = 0.3;
+float setpoint = 8;
+float epsilon = 0.2;
 int chiller = 0;
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -35,7 +38,8 @@ void setup(void)
   Serial.println();
 
   thermometers.begin();
-  pinMode(0, OUTPUT);
+  pinMode(GPIO_CHILLER, OUTPUT);
+  digitalWrite(GPIO_CHILLER, GPIO_CHILLER_OFF);
 }
 
 void connect_wifi(){
@@ -67,7 +71,7 @@ void loop(void)
     }
     delay(15);
     temperature = get_temperature();
-  } while (temperature < 0);
+  } while (temperature < THERMOMETER_MIN || temperature > THERMOMETER_MAX);
   
   if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
   if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
