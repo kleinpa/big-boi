@@ -15,7 +15,7 @@ const int GPIO_CHILLER = 0;
 const int GPIO_CHILLER_ON = LOW;
 const int GPIO_CHILLER_OFF = HIGH;
 
-const int UPDATE_DELAY = 15000;
+const int UPDATE_DELAY = 15500;
 const int TIMEOUT_NETWORK = 5000;
 const int TIMEOUT_THERMOMETER = 5000;
 
@@ -56,26 +56,32 @@ void connect_wifi(){
     Serial.println(WiFi.localIP());
   }
 }
-
+unsigned long lastReading = 0;
 void loop(void)
 {
-  delay(UPDATE_DELAY);
-  connect_wifi();
+  unsigned long now = millis();
 
-  unsigned long start = millis();
-  do {
-    if(millis() - start > TIMEOUT_THERMOMETER) {
-      set_chiller(false);
-      Serial.println("Timeout reading from thermometer.");
-      return;  
-    }
-    delay(15);
-    temperature = get_temperature();
-  } while (temperature < THERMOMETER_MIN || temperature > THERMOMETER_MAX);
-  
-  if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
-  if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
-  thingspeak_log();
+  if(now - lastReading > UPDATE_DELAY)
+  {
+    lastReading = now;
+
+    connect_wifi();
+
+    unsigned long start = millis();
+    do {
+      if(millis() - start > TIMEOUT_THERMOMETER) {
+        set_chiller(false);
+        Serial.println("Timeout reading from thermometer.");
+        return;
+      }
+      delay(15);
+      temperature = get_temperature();
+    } while (temperature < THERMOMETER_MIN || temperature > THERMOMETER_MAX);
+
+    if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
+    if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
+    thingspeak_log();
+  }
 }
 
 float get_temperature()
