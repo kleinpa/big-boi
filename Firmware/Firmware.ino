@@ -1,7 +1,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include "private.h"
+#include "http_index.h"
 
 const char* host = "api.thingspeak.com";
 /* Values set in "private.h" */
@@ -24,13 +26,15 @@ const int THERMOMETER_MAX = 37;
 
 // State
 float temperature;
-float setpoint = 8;
+float setpoint = 20;
 float epsilon = 0.2;
 int chiller = 0;
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(GPIO_ONE_WIRE);
 DallasTemperature thermometers(&oneWire);
+
+ESP8266WebServer server(80);
 
 void setup(void)
 {
@@ -40,6 +44,35 @@ void setup(void)
   thermometers.begin();
   pinMode(GPIO_CHILLER, OUTPUT);
   digitalWrite(GPIO_CHILLER, GPIO_CHILLER_OFF);
+
+  server.on("/data", handleData);
+  server.on("/", []() {
+    server.send(200, "text/html", http_index);
+  } );
+  server.begin();
+}
+
+void handleData() {
+  if (server.method() == HTTP_GET) {
+    String url = "{";
+    url += "\"temperature\":";
+    url += temperature;
+    url += ",\"chiller\":";
+    url += chiller?"true":"false";
+    url += ",\"setpoint\":";
+    url += setpoint;
+    url += ",\"epsilon\":";
+    url += epsilon;
+    url += "}";
+    server.send(200, "application/javascript", url);
+  } else if (server.method() == HTTP_POST) {
+    String arg, msg;
+    if(arg = server.arg("setpoint"))
+    {
+      setpoint = arg.toFloat();
+      server.send(200, "application/javascript", "{\"result\":\"ok\"}");
+    }
+  }
 }
 
 void connect_wifi(){
@@ -59,25 +92,23 @@ void connect_wifi(){
 unsigned long lastReading = 0;
 void loop(void)
 {
-  unsigned long now = millis();
+  connect_wifi();
+  server.handleClient();
 
+  unsigned long now = millis();
   if(now - lastReading > UPDATE_DELAY)
   {
     lastReading = now;
-
-    connect_wifi();
-
-    unsigned long start = millis();
     do {
-      if(millis() - start > TIMEOUT_THERMOMETER) {
+      if(millis() - now > TIMEOUT_THERMOMETER) {
         set_chiller(false);
         Serial.println("Timeout reading from thermometer.");
-        return;
+        return;  
       }
       delay(15);
       temperature = get_temperature();
     } while (temperature < THERMOMETER_MIN || temperature > THERMOMETER_MAX);
-
+  
     if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
     if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
     thingspeak_log();
