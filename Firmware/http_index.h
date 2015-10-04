@@ -3,7 +3,6 @@ const String http_index =
   "<html>"
   "  <head>"
   "    <title>Big Boi</title>"
-  "    <base href='http://192.168.1.130/'>"
   "  </head>"
   "  <body>"
   "    <form action='/data' method='post'>"
