@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP8266WiFi.h>
@@ -24,11 +25,18 @@ const int TIMEOUT_THERMOMETER = 5000;
 const int THERMOMETER_MIN = -2;
 const int THERMOMETER_MAX = 37;
 
-// State
+// Runtime State
 float temperature;
-float setpoint = 20;
-float epsilon = 0.2;
 int chiller = 0;
+
+// Persistent State
+int STATE_VERSION = 0;
+struct State {
+  char id[16];
+  int version;
+  float setpoint;
+  float epsilon;
+} state;
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(GPIO_ONE_WIRE);
@@ -38,6 +46,9 @@ ESP8266WebServer server(80);
 
 void setup(void)
 {
+  EEPROM.begin(sizeof(state));
+  loadState();
+
   Serial.begin(115200);
   Serial.println();
 
@@ -60,16 +71,17 @@ void handleData() {
     url += ",\"chiller\":";
     url += chiller?"true":"false";
     url += ",\"setpoint\":";
-    url += setpoint;
+    url += state.setpoint;
     url += ",\"epsilon\":";
-    url += epsilon;
+    url += state.epsilon;
     url += "}";
     server.send(200, "application/javascript", url);
   } else if (server.method() == HTTP_POST) {
     String arg, msg;
     if(arg = server.arg("setpoint"))
     {
-      setpoint = arg.toFloat();
+      state.setpoint = arg.toFloat();
+      saveState();
       server.send(200, "application/javascript", "{\"result\":\"ok\"}");
     }
   }
@@ -109,8 +121,8 @@ void loop(void)
       temperature = get_temperature();
     } while (temperature < THERMOMETER_MIN || temperature > THERMOMETER_MAX);
   
-    if (!chiller && temperature > setpoint + epsilon) set_chiller(true);
-    if ( chiller && temperature < setpoint - epsilon) set_chiller(false);
+    if (!chiller && temperature > state.setpoint + state.epsilon) set_chiller(true);
+    if ( chiller && temperature < state.setpoint - state.epsilon) set_chiller(false);
     thingspeak_log();
   }
 }
@@ -141,9 +153,9 @@ void thingspeak_log(){
   url += "&field2=";
   url += chiller?"1":"0";
   url += "&field3=";
-  url += setpoint;
+  url += state.setpoint;
   url += "&field4=";
-  url += epsilon;
+  url += state.epsilon;
   Serial.println(host + url);
 
   delay(10);
@@ -157,4 +169,25 @@ void thingspeak_log(){
   while(client.available()){
     String line = client.readStringUntil('\r');
   }
+}
+
+char STATE_ID[16] = {0x32, 0x07, 0x0b, 0x4f, 0x08, 0x3c, 0x42, 0x25, 0xa6, 0x09, 0x0c, 0x35, 0x97, 0x92, 0x16, 0x9c};
+
+void loadState() {
+
+  EEPROM.get(0, state);
+  if(!(/*memcmp(STATE_ID, state.id, 16) && */STATE_VERSION == state.version)) {
+    // Fails ID check, reinitialize
+    memcpy(state.id, STATE_ID, 16);
+    state.version = STATE_VERSION;
+    state.setpoint = 8;
+    state.epsilon = 0.2;
+    saveState();
+  }
+}
+
+void saveState() {
+  EEPROM.put(0, state);
+  yield();
+  EEPROM.commit();
 }
