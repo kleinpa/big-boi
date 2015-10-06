@@ -4,7 +4,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include "private.h"
-#include "http_index.h"
+#include "http_content.h"
 
 const char* host = "api.thingspeak.com";
 /* Values set in "private.h" */
@@ -57,9 +57,7 @@ void setup(void)
   digitalWrite(GPIO_CHILLER, GPIO_CHILLER_OFF);
 
   server.on("/data", handleData);
-  server.on("/", []() {
-    server.send(200, "text/html", http_index);
-  } );
+  load_http_content(server);
   server.begin();
 }
 
