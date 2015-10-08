@@ -76,9 +76,15 @@ void handleData() {
     server.send(200, "application/javascript", url);
   } else if (server.method() == HTTP_POST) {
     String arg, msg;
-    if(arg = server.arg("setpoint"))
+    if((arg = server.arg("setpoint")) && arg.length() > 0)
     {
       state.setpoint = arg.toFloat();
+      saveState();
+      server.send(200, "application/javascript", "{\"result\":\"ok\"");
+    }
+    if((arg = server.arg("epsilon")) && arg.length() > 0)
+    {
+      state.epsilon = arg.toFloat();
       saveState();
       server.send(200, "application/javascript", "{\"result\":\"ok\"}");
     }

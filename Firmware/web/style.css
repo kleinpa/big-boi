@@ -1,0 +1,17 @@
+#state-temperature {
+  font-size: 400%;
+  display: block;
+}
+
+#state-setpoint {
+  font-size: 200%;
+    margin-right: 1em;
+}
+
+#state-epsilon {
+  font-size: 200%;
+}
+
+.chiller-status {
+  color: #008CBA;
+}
