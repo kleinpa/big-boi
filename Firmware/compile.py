@@ -22,6 +22,10 @@ def toCString(s, encoding='ascii'):
          result += c
    return result
 
+def toCCharArray(f):
+  bs = f.read()
+  return (len(bs), "{" + ', '.join('0x{:02x}'.format(x) for x in bs) + "}")
+
 file_spec = []
 
 for path in files:
@@ -29,29 +33,21 @@ for path in files:
   mimetype, _ = mimetypes.guess_type(path)
   mimetype = mimetype or "application/octet-stream"
   signature = "http_" + hashlib.sha224(path.encode('utf-8')).hexdigest()
+  with open(os.path.join(root, path), 'rb') as i:
+    l, b = toCCharArray(i)
   if mimetype != "application/octet-stream":
-    file_spec.append((http_path, mimetype, path, signature))
+    file_spec.append((http_path, mimetype, path, signature, l, b))
 
 with open('http_content.h', 'w') as o:
-  for http_path, mimetype, path, signature in file_spec:
-    o.write("const String " + signature + " = ")
-    with open(os.path.join(root, path), 'r') as i:
-      empty = True
-      for l in i:
-        empty = False
-        o.write('\n  \"')
-        o.write(toCString(l))
-        o.write('\"')
-      if empty:
-        o.write('\"\"')
-    o.write(";\n")
+  for http_path, mimetype, path, signature, l, b in file_spec:
+    o.write("const char " + signature + "[" + str(l) + "] = " + b + ";\n")
   o.write("void load_http_content(ESP8266WebServer &server) {\n")
-  for http_path, mimetype, path, signature in file_spec:
-    o.write("  server.on(\"" + toCString(http_path) + "\", [&server]() { server.send(200, \"" + toCString(mimetype) + "\", " + signature + ");});\n")
+  for http_path, mimetype, path, signature, l, b in file_spec:
+    o.write("  server.on(\"" + toCString(http_path) + "\", [&server]() { server.send_P(200, \"" + toCString(mimetype) + "\", " + signature + "," + str(l) + ");});\n")
     if http_path.endswith("index.html"):
-      o.write("  server.on(\"" + toCString(http_path[:-10]) + "\", [&server]() { server.send(200, \"" + toCString(mimetype) + "\", " + signature + ");});\n")
+      o.write("  server.on(\"" + toCString(http_path[:-10]) + "\", [&server]() { server.send_P(200, \"" + toCString(mimetype) + "\", " + signature + "," + str(l) + ");});\n")
   o.write("}")
 
-for http_path, mimetype, path, signature in file_spec:
+for http_path, mimetype, path, signature, l, b in file_spec:
   print(http_path)
 print("Processed {0} files".format(len(file_spec)))
