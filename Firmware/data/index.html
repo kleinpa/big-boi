@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html ng-app="bigboi" ng-controller="BigBoiController">
+<head>
+  <title>Big Boi</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/5.5.2/css/foundation.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script yupe="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0-beta.1/angular.js"></script>
+  <script yupe="text/javascript" src="index.js"></script>
+</head>
+<body>
+  <div class="row">
+    <div class="large-12 columns">
+      <h1>Big Boi</h1>
+    </div>
+    <div class="large-12 columns">
+      <p></p>
+      <div ng-if="status=='connecting'" class="alert-box info">Connecting...</div>
+      <div ng-if="status=='disconnected'" class="alert-box alert">Disconnected</div>
+      <div class="row">
+        <div class="large-4 columns">
+          <span id="state-temperature">{{ state.temperature || "?"}} &#8451
+            <span class="chiller-status" ng-if="state.chiller">&#10052;</span>
+          </span>
+        </div>
+        <div class="large-4 columns">
+          <span id="state-compressor-temperature">Compressor {{ state.compressorTemperature || "?"}} &#8451</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="large-4 columns">
+          Setpoint <span id="state-setpoint">{{ state.setpoint || "?" }} &#8451</span>
+        </div>
+        <div class="large-4 columns"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="large-4 columns">
+      <form ng-submit="sendSetpoint(inputSetpoint)">
+        <div class="row collapse">
+          <div class="small-8 columns">
+            <input type="text" ng-model="inputSetpoint" name="setpoint" placeholder="setpoint">
+          </div>
+          <div class="small-4 columns">
+            <button class="button postfix" ng-disabled="status==='disconnected'">Setpoint</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="large-4 columns"></div>
+  </div>
+  <a href="/config.html">Configuration</a>
+</body>
+</html>

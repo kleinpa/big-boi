@@ -5,7 +5,7 @@ angular
     $scope.state = {};
     tries = 0;
     (function update() {
-      $http.get('/data', {timeout: 3000}).
+      $http.get('/data?thermometers=1', {timeout: 5000}).
       then(function success(response) {
         tries = 0;
         $scope.status = 'connected';
@@ -22,6 +22,16 @@ angular
         setTimeout(update, 6000);
       });
     })();
+    $scope.sendCompressorThermometer = function(address){
+      if($scope.status == 'connected')
+        $scope.state.compressorThermometer = address;
+      $http.post('/data', "compressorThermometer=" + address);
+    };
+    $scope.sendFridgeThermometer = function(address){
+      if($scope.status == 'connected')
+        $scope.state.fridgeThermometer = address;
+      $http.post('/data', "fridgeThermometer=" + address);
+    };
     $scope.sendSetpoint = function(setpoint){
       if($scope.status == 'connected')
         $scope.state.setpoint = setpoint;
@@ -31,5 +41,10 @@ angular
       if($scope.status == 'connected')
         $scope.state.epsilon = epsilon;
       $http.post('/data', "epsilon=" + epsilon);
+    };
+    $scope.sendCompressorLimit = function(compressorLimit){
+      if($scope.status == 'connected')
+        $scope.state.compressorLimit = compressorLimit;
+      $http.post('/data', "compressorLimit=" + compressorLimit);
     };
   }]);

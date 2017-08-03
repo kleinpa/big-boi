@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html ng-app="bigboi" ng-controller="BigBoiController">
+<head>
+  <title>Big Boi</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/5.5.2/css/foundation.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script yupe="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0-beta.1/angular.js"></script>
+  <script yupe="text/javascript" src="index.js"></script>
+</head>
+<body>
+  <h1>Big Boi Config</h1>
+  <div ng-if="status=='connecting'" class="alert-box info">Connecting...</div>
+  <div ng-if="status=='disconnected'" class="alert-box alert">Disconnected</div>
+  <a href ng-click="switchThermometers()">Switch Thermometers</a>
+  Epsilon <span id="state-epsilon">{{ state.epsilon || "?" }} &#8451</span>
+
+  <form ng-submit="sendSetpoint(inputSetpoint)">
+    <div class="row collapse">
+      <div class="small-8 columns">
+        <input type="text" ng-model="inputSetpoint" name="setpoint" placeholder="setpoint">
+      </div>
+      <div class="small-4 columns">
+        <button class="button postfix" ng-disabled="status==='disconnected'">Setpoint</button>
+      </div>
+    </div>
+  </form>
+  <form ng-submit="sendEpsilon(inputEpsilon)">
+    <div class="row collapse">
+      <div class="small-8 columns">
+        <input type="text" ng-model="inputEpsilon" name="epsilon" placeholder="Epsilon">
+      </div>
+      <div class="small-4 columns">
+        <button class="button postfix" ng-disabled="status==='disconnected'">Epsilon</button>
+      </div>
+    </div>
+  </form>
+  <form ng-submit="sendCompressorLimit(inputCompressorLimit)">
+    <div class="row collapse">
+      <div class="small-8 columns">
+        {{ state.compressorLimit }}
+        <input type="text" ng-model="inputCompressorLimit" name="compressorLimit" placeholder="compressorLimit">
+      </div>
+      <div class="small-4 columns">
+        <button class="button postfix" ng-disabled="status==='disconnected'">Compressor Limit</button>
+      </div>
+    </div>
+  </form>
+  <form ng-submit="sendFridgeThermometer(inputFridgeThermometer)">
+    <div class="row collapse">
+      <div class="small-8 columns">
+        <select type="select" ng-model="inputFridgeThermometer" name="fridgeThermometer">
+          <option ng-repeat="address in state.thermometers" value="{{ address }}">{{ address }}</option>
+        </select>
+      </div>
+      <div class="small-4 columns">
+        <button class="button postfix" ng-disabled="status==='disconnected'">Fridge Thermometer</button>
+      </div>
+    </div>
+  </form>
+  <form ng-submit="sendCompressorThermometer(inputCompressorThermometer)">
+    <div class="row collapse">
+      <div class="small-8 columns">
+        <select type="select" ng-model="inputCompressorThermometer" name="compressorThermometer">
+          <option ng-repeat="address in state.thermometers" value="{{ address }}">{{ address }}</option>
+        </select>
+      </div>
+      <div class="small-4 columns">
+        <button class="button postfix" ng-disabled="status==='disconnected'">Compressor Thermometer</button>
+      </div>
+    </div>
+  </form>
+</body>
+</html>
