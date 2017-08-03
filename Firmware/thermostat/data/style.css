@@ -1,0 +1,24 @@
+html, body {
+  background-color: #235B90;
+  color: white;
+  margin: 0;
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+
+  box-sizing: border-box;
+  padding: 10vh 10vw;
+}
+
+.temperature {
+  font-size: 17rem;
+  display: inline-block;
+}
+.temperature .unit {
+  color:#7cafdf;
+  font-stretch: extra-condensed;
+}

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html ng-app="simpleThermometer" ng-controller="SimpleThermometerController">
+<head>
+  <title>Big Boi</title>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script yupe="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0-beta.1/angular.js"></script>
+  <script yupe="text/javascript" src="index.js"></script>
+</head>
+<body>
+  {{}}
+  <span ng-if="state.temperature" class="temperature">{{ (state.temperature| number:1)}}<span class="unit">&deg;C<span></span>
+  <span ng-if="!state.temperature" class="temperature">?</span>
+</body>
+</html>
